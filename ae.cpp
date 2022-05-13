@@ -1,31 +1,25 @@
-//Active Edge
-
 #include<windows.h>
-
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
 #include <GL/glut.h>
-#endif
-
 #include <stdlib.h>
 #include <bits/stdc++.h>
 #include <cstdlib>
 #include <unistd.h>
 
-
 using namespace std;
 
-vector< pair<int,int> > points;
-vector< pair<int,int> > sorted_y_points;
+vector< pair<int,int> > p;
+vector< pair<int,int> > new_y;
 
-struct node{
-    int y_max;
-    float x_ymin;
-    float inv_slope;
+struct node
+{
+    int ymax;
+    float xymin;
+    float slope;
 };
 
-void drawLine(float x1,float y1,float x2,float y2){
+void drawLine(float x1,float y1,float x2,float y2)
+{
+    //glColor3b(1,0,0);
     glBegin(GL_LINES);
     glVertex2d(x1,y1);
     glVertex2d(x2,y2);
@@ -38,141 +32,159 @@ static void display(void)
     glFlush();
 }
 
-void Print(vector< pair<int,int > > point){
-    cout<<"\n";
-    for(int i=0;i<point.size();i++){
-        cout<<point[i].first<<" "<<point[i].second<<" -- ";
-    }
-    cout<<"\n";
-}
-
-bool sort_y_fun(const pair<int,int> &p1,const pair<int,int> &p2){
+bool sort_y_fun(const pair<int,int> &p1,const pair<int,int> &p2)
+{
     return (p1.second<p2.second);
 }
 
-int findIndex(vector< pair<int,int> > point,pair<int,int> pr){
-    for(int i=0;i<point.size();i++){
-        if(point[i].first==pr.first && point[i].second==pr.second){
+int findIndex(vector< pair<int,int> > point,pair<int,int> pr)
+{
+    for(int i=0;i<point.size();i++)
+    {
+        if(point[i].first==pr.first && point[i].second==pr.second)
+        {
             return i;
         }
     }
     return -1;
 }
 
-void FillPoly(){
-    copy(points.begin(), points.end(), back_inserter(sorted_y_points));
-    sort(sorted_y_points.begin(),sorted_y_points.end(),sort_y_fun);
+void FillPoly()
+{
+    copy(p.begin(), p.end(), back_inserter(new_y));
+    sort(new_y.begin(),new_y.end(),sort_y_fun);
 
-    int y_min = sorted_y_points[0].second;
-    int y_max = sorted_y_points.back().second;
+    int y_min = new_y[0].second;
+    int ymax = new_y.back().second;
 
-    vector< list<node> *> global_table(y_max-y_min+1);
+    vector< list<node> *> g_table(ymax-y_min+1);
     int displacement = y_min;
-    set< pair<int,int> > visited;
+    set< pair<int,int> > mp;
 
-    for(int i=0;i<global_table.size();i++){
-        global_table[i] = nullptr;
+    for(int i=0;i<g_table.size();i++)
+    {
+        g_table[i] = nullptr;
     }
 
-    for(int i=0;i<sorted_y_points.size();i++){
-        int posn = findIndex(points,sorted_y_points[i]);
+    for(int i=0;i<new_y.size();i++)
+    {
+        int posn = findIndex(p,new_y[i]);
         int prevpos = posn-1;
         int nextpos = posn+1;
-        if(posn==0){
-            prevpos = points.size()-1;
+        if(posn==0)
+        {
+            prevpos = p.size()-1;
         }
-        else if(posn==points.size()-1){
+        else if(posn==p.size()-1)
+        {
             nextpos = 0;
         }
 
-        if(visited.find(points[prevpos]) == visited.end()){
-            int x1 = points[prevpos].first, y1 = points[prevpos].second;
-            int x2 = points[posn].first, y2 = points[posn].second;
-            int y_max = max(y1,y2);
-            int x_ymin = 0;
-            if(y1<y2){
-                x_ymin = x1;
+        if(mp.find(p[prevpos]) == mp.end())
+        {
+            int x1 = p[prevpos].first, y1 = p[prevpos].second;
+            int x2 = p[posn].first, y2 = p[posn].second;
+            int ymax = max(y1,y2);
+            int xymin = 0;
+            if(y1<y2)
+            {
+                xymin = x1;
             }
-            else{
-                x_ymin = x2;
+            else
+            {
+                xymin = x2;
             }
-            float inv_slope = (x2-x1)/float(y2-y1);
-            node n = {y_max,x_ymin,inv_slope};
-            if(global_table[y2-displacement]==nullptr){
+            float slope = (x2-x1)/float(y2-y1);
+            node n = {ymax,xymin,slope};
+            if(g_table[y2-displacement]==nullptr)
+            {
                 list<node> *l = new list<node>;
                 l->push_back(n);
-                global_table[y2-displacement] = l;
-            }else{
-                list<node> *l1 = global_table[y2-displacement];
+                g_table[y2-displacement] = l;
+            }
+            else
+            {
+                list<node> *l1 = g_table[y2-displacement];
                 l1->push_back(n);
             }
         }
-        if(visited.find(points[nextpos]) == visited.end()){
-            int x1 = points[nextpos].first, y1 = points[nextpos].second;
-            int x2 = points[posn].first, y2 = points[posn].second;
-            int y_max = max(y1,y2);
-            int x_ymin = 0;
-            if(y1<y2){
-                x_ymin = x1;
+        if(mp.find(p[nextpos]) == mp.end())
+        {
+            int x1 = p[nextpos].first, y1 = p[nextpos].second;
+            int x2 = p[posn].first, y2 = p[posn].second;
+            int ymax = max(y1,y2);
+            int xymin = 0;
+            if(y1<y2)
+            {
+                xymin = x1;
             }
-            else{
-                x_ymin = x2;
+            else
+            {
+                xymin = x2;
             }
-            float inv_slope = (x2-x1)/float(y2-y1);
-            node n = {y_max,x_ymin,inv_slope};
-            if(global_table[y2-displacement]==nullptr){
+            float slope = (x2-x1)/float(y2-y1);
+            node n = {ymax,xymin,slope};
+            if(g_table[y2-displacement]==nullptr)
+            {
                 list<node> *l = new list<node>;
                 l->push_back(n);
-                global_table[y2-displacement] = l;
-            }else{
-                list<node> *l1 = global_table[y2-displacement];
+                g_table[y2-displacement] = l;
+            }else
+            {
+                list<node> *l1 = g_table[y2-displacement];
                 l1->push_back(n);
             }
         }
-        visited.insert(points[posn]);
+        mp.insert(p[posn]);
     }
 
     int y = y_min;
-    vector< node > AET;
-    while(y<=y_max){
-        list<node> *l = global_table[y-displacement];
-        if(l!=nullptr){
-            for(auto it=l->begin();it!=l->end();it++){
-                node n1 = {it->y_max,it->x_ymin,it->inv_slope};
-                AET.push_back(n1);
+    vector< node > a;
+    while(y<=ymax)
+    {
+        list<node> *l = g_table[y-displacement];
+        if(l!=nullptr)
+        {
+            for(auto it=l->begin();it!=l->end();it++)
+            {
+                node n1 = {it->ymax,it->xymin,it->slope};
+                a.push_back(n1);
             }
         }
-
-        for(int i=0;i<AET.size();i++){
-                //increment
-                AET[i].x_ymin+=AET[i].inv_slope;
+        for(int i=0;i<a.size();i++)
+        {
+                a[i].xymin+=a[i].slope;
         }
 
-        if(AET.size()>2){
-            //delete
+        if(a.size()>2)
+        {
             int i=0;
-            while(i<AET.size()){
-                if(AET[i].y_max==y){
-                    AET.erase(AET.begin() + i);
+            while(i<a.size())
+            {
+                if(a[i].ymax==y)
+                {
+                    a.erase(a.begin() + i);
                     i--;
                 }
                 i++;
             }
         }
-
-        int x1 = AET[0].x_ymin;
-        int x2 = AET[1].x_ymin;
+        int x1 = a[0].xymin;
+        int x2 = a[1].xymin;
         usleep(10000);
         drawLine(x1,y,x2,y);
         y++;
     }
 }
 
-void drawPoly(){
+void polygondraw()
+{
+    glColor3d(1,1,0);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     glBegin(GL_POLYGON);
-    for(int i=0;i<points.size();i++){
-        glVertex2d(points[i].first,points[i].second);
+    for(int i=0;i<p.size();i++)
+    {
+        glVertex2d(p[i].first,p[i].second);
     }
     glEnd();
     glFlush();
@@ -180,20 +192,24 @@ void drawPoly(){
 
 }
 
-void init(){
+void init()
+{
     glClearColor(0,0,0,0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0,640,0,480);
 }
 
-void MouseFn(int button,int status,int x,int y){
-    if(button==GLUT_LEFT_BUTTON && status==GLUT_DOWN){
-        pair<int,int> pr(x,480-y);
-        points.push_back(pr);
+void mousefunc(int button,int status,int x,int y)
+{
+    if(button==GLUT_LEFT_BUTTON && status==GLUT_DOWN)
+        {
+        pair<int,int> pt(x,480-y);
+        p.push_back(pt);
     }
-    else if(button==GLUT_RIGHT_BUTTON && status==GLUT_DOWN){
-        drawPoly();
+    else if(button==GLUT_RIGHT_BUTTON && status==GLUT_DOWN)
+    {
+        polygondraw();
     }
 }
 
@@ -207,7 +223,7 @@ int main(int argc, char *argv[])
     glutCreateWindow("GLUT Shapes");
     init();
     glutDisplayFunc(display);
-    glutMouseFunc(MouseFn);
+    glutMouseFunc(mousefunc);
     glutMainLoop();
 
     return EXIT_SUCCESS;
